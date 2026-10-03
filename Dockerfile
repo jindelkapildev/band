@@ -2,6 +2,7 @@ FROM mcr.microsoft.com/playwright/python:v1.40.0-jammy
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Etc/UTC
+ENV PYTHONUNBUFFERED=1
 
 # Install Virtual Display, Window Manager (fluxbox), and noVNC
 RUN apt-get update && apt-get install -y --no-install-recommends \
