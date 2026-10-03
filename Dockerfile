@@ -1,12 +1,17 @@
 FROM mcr.microsoft.com/playwright/python:v1.40.0-jammy
 
+# Prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Etc/UTC
+
 # Install Virtual Display (Xvfb) and noVNC web streaming components
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     xvfb \
     x11vnc \
     novnc \
     websockify \
     python3-pip \
+    tzdata \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
