@@ -1,27 +1,24 @@
-FROM mcr.microsoft.com/playwright/python:v1.40.0-jammy
+#!/bin/bash
 
-# Prevent interactive prompts during package installation
-ENV DEBIAN_FRONTEND=noninteractive
-ENV TZ=Etc/UTC
+# 1. Clean up stale X11 lock files from container restarts
+rm -f /tmp/.X99-lock
 
-# Install Virtual Display (Xvfb) and noVNC web streaming components
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    xvfb \
-    x11vnc \
-    novnc \
-    websockify \
-    python3-pip \
-    tzdata \
-    && rm -rf /var/lib/apt/lists/*
+# 2. Start virtual display buffer
+Xvfb :99 -screen 0 1920x1080x24 &
+export DISPLAY=:99
 
-WORKDIR /app
+# 3. Wait 2 seconds for Xvfb to initialize
+sleep 2
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# 4. Start Fluxbox Window Manager (enables mouse clicks and focus)
+fluxbox &
 
-COPY . .
+# 5. Start VNC server
+x11vnc -display :99 -forever -shared -nopw -rfbport 5900 &
 
-# Grant execute permissions to startup script
-RUN chmod +x start.sh
+# 6. Bind noVNC to Render PORT
+PORT=${PORT:-10000}
+websockify --web=/usr/share/novnc/ $PORT localhost:5900 &
 
-CMD ["./start.sh"]
+# 7. Launch Python script
+python3 band.py
