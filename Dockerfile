@@ -1,24 +1,26 @@
-#!/bin/bash
+FROM mcr.microsoft.com/playwright/python:v1.40.0-jammy
 
-# 1. Clean up stale X11 lock files from container restarts
-rm -f /tmp/.X99-lock
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Etc/UTC
 
-# 2. Start virtual display buffer
-Xvfb :99 -screen 0 1920x1080x24 &
-export DISPLAY=:99
+# Install Virtual Display, Window Manager (fluxbox), and noVNC
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    xvfb \
+    x11vnc \
+    novnc \
+    websockify \
+    python3-pip \
+    tzdata \
+    fluxbox \
+    && rm -rf /var/lib/apt/lists/*
 
-# 3. Wait 2 seconds for Xvfb to initialize
-sleep 2
+WORKDIR /app
 
-# 4. Start Fluxbox Window Manager (enables mouse clicks and focus)
-fluxbox &
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# 5. Start VNC server
-x11vnc -display :99 -forever -shared -nopw -rfbport 5900 &
+COPY . .
 
-# 6. Bind noVNC to Render PORT
-PORT=${PORT:-10000}
-websockify --web=/usr/share/novnc/ $PORT localhost:5900 &
+RUN chmod +x start.sh
 
-# 7. Launch Python script
-python3 band.py
+CMD ["./start.sh"]
